@@ -1,67 +1,142 @@
 package com.icqube.ai;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.text.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.net.URL;
+import java.util.ArrayList;
 
 public class MainActivity {
 
-    /*
-     * Pseudocode:
-     * 1. Create Swing window
-     * 2. Add input field, button, and text area
-     * 3. On button click, call AI handler
-     * 4. Pass AI output to CubeRecommender
-     * 5. Display result in text area
-     */
+    private static final java.util.List<String> conversationHistory = new java.util.ArrayList<>();
 
     public static void main(String[] args) {
-        JFrame frame = new JFrame("ICQube AI Cube Finder");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(500, 400);
-        frame.setLayout(new BorderLayout(10, 10));
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("ICQube Chatbot");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setSize(500, 600);
 
-        JLabel title = new JLabel("🧊 ICQube: AI Cube Finder", SwingConstants.CENTER);
-        title.setFont(new Font("Arial", Font.BOLD, 18));
+            JTextPane chatPane = new JTextPane();
+            chatPane.setEditable(false);
+            chatPane.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+            chatPane.setBorder(new EmptyBorder(8, 8, 8, 8));
+            chatPane.setBackground(Color.WHITE);
 
-        JTextField inputField = new JTextField();
-        inputField.setToolTipText("Describe your ideal cube...");
+            JScrollPane chatScroll = new JScrollPane(chatPane,
+                    JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                    JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+            chatScroll.setBorder(null);
 
-        JButton findButton = new JButton("Find Cube");
+            JPanel inputPanel = new JPanel(new BorderLayout(8, 0));
+            inputPanel.setBackground(new Color(245, 248, 250));
+            inputPanel.setBorder(new EmptyBorder(14, 10, 14, 10));
 
-        JTextArea outputArea = new JTextArea();
-        outputArea.setEditable(false);
-        outputArea.setLineWrap(true);
-        outputArea.setWrapStyleWord(true);
-        JScrollPane scrollPane = new JScrollPane(outputArea);
+            JTextField inputField = new JTextField();
+            inputField.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+            inputField.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(200, 220, 240)),
+                    new EmptyBorder(7, 7, 7, 7)
+            ));
+            inputField.setToolTipText("Type your cube request or chat...");
 
-        frame.add(title, BorderLayout.NORTH);
-        frame.add(inputField, BorderLayout.CENTER);
-        frame.add(findButton, BorderLayout.EAST);
-        frame.add(scrollPane, BorderLayout.SOUTH);
+            JButton sendBtn = new JButton("Send");
+            sendBtn.setFont(new Font("Segoe UI", Font.BOLD, 16));
+            sendBtn.setBackground(new Color(51, 153, 255));
+            sendBtn.setForeground(Color.WHITE);
+            sendBtn.setFocusPainted(false);
 
-        findButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
+            inputPanel.add(inputField, BorderLayout.CENTER);
+            inputPanel.add(sendBtn, BorderLayout.EAST);
+
+            JLabel spinnerLabel = new JLabel();
+            spinnerLabel.setVisible(false);
+            try {
+                URL spinnerUrl = new URL("https://i.imgur.com/6RMhx.gif"); // Spinner gif url
+                spinnerLabel.setIcon(new ImageIcon(spinnerUrl));
+            } catch (Exception e) {
+                System.out.println("Failed to load spinner icon.");
+            }
+
+            JPanel bottomPanel = new JPanel(new BorderLayout());
+            bottomPanel.add(inputPanel, BorderLayout.CENTER);
+            bottomPanel.add(spinnerLabel, BorderLayout.EAST);
+
+            frame.setLayout(new BorderLayout());
+            frame.add(chatScroll, BorderLayout.CENTER);
+            frame.add(bottomPanel, BorderLayout.SOUTH);
+
+            StyledDocument doc = chatPane.getStyledDocument();
+
+            Style userStyle = doc.addStyle("User", null);
+            StyleConstants.setForeground(userStyle, new Color(41, 128, 185));
+            StyleConstants.setBold(userStyle, true);
+
+            Style botStyle = doc.addStyle("Bot", null);
+            StyleConstants.setForeground(botStyle, new Color(44, 62, 80));
+            StyleConstants.setBold(botStyle, false);
+
+            Runnable clearInputError = () -> inputField.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(200, 220, 240)),
+                    new EmptyBorder(7, 7, 7, 7)
+            ));
+
+            sendBtn.addActionListener(e -> {
                 String userPrompt = inputField.getText().trim();
                 if (userPrompt.isEmpty()) {
-                    outputArea.setText("Please enter your cube preferences!");
+                    inputField.setBorder(BorderFactory.createLineBorder(Color.RED));
                     return;
                 }
+                clearInputError.run();
+                inputField.setText("");
+                appendMessage(doc, "You: " + userPrompt + "\n", userStyle);
 
-                outputArea.setText("Analyzing your request...\n");
+                conversationHistory.add("User: " + userPrompt);
 
-                // Step 1: Get AI tags
-                String aiTags = AIChatHandler.getCubeTags(userPrompt);
-                outputArea.append("AI extracted tags: " + aiTags + "\n\n");
+                StringBuilder conversationBuilder = new StringBuilder();
+                for (String line : conversationHistory) {
+                    conversationBuilder.append(line).append("\n");
+                }
+                conversationBuilder.append("AI:");
 
-                // Step 2: Recommend cube
-                String recommendation = CubeRecommender.getRecommendedCube(aiTags);
-                outputArea.append("Best match:\n" + recommendation);
-            }
+                final String promptForAI = conversationBuilder.toString();
+
+                new SwingWorker<Void, Void>() {
+                    String aiOutput, response;
+
+                    @Override
+                    protected Void doInBackground() {
+                        SwingUtilities.invokeLater(() -> spinnerLabel.setVisible(true));
+                        // Get AI response: tags or chat reply
+                        aiOutput = AIChatHandler.getResponseWithContext(promptForAI);
+                        if (aiOutput.startsWith("[chat]")) {
+                            response = aiOutput.substring(6).trim();
+                        } else {
+                            // Normalize tags before searching
+                            String normalizedTags = AIChatHandler.mapUserTagsToCanonical(aiOutput);
+                            response = CubeRecommender.getRecommendedCube(normalizedTags);
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    protected void done() {
+                        spinnerLabel.setVisible(false);
+                        appendMessage(doc, "Bot: " + response + "\n\n", botStyle);
+                        conversationHistory.add("AI: " + response);
+                        chatPane.setCaretPosition(chatPane.getDocument().getLength());
+                    }
+                }.execute();
+            });
+
+            frame.setVisible(true);
         });
+    }
 
-        frame.setVisible(true);
+    private static void appendMessage(StyledDocument doc, String msg, Style style) {
+        try {
+            doc.insertString(doc.getLength(), msg, style);
+        } catch (Exception ignored) {
+        }
     }
 }
