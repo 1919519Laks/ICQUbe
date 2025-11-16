@@ -6,24 +6,45 @@ import java.util.*;
 public class CubeDatabase {
     private static final String DB_URL = "jdbc:ucanaccess://ICQube.accdb";
 
-    public static String findCubeByTags(String[] tags) {
+    public static String findCubeByFilters(String[] tags, String brand, Double minPrice, Double maxPrice) {
         List<String> normalizedTags = new ArrayList<>(Arrays.asList(tags));
+        List<String> whereClauses = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
 
-        if (normalizedTags.isEmpty())
-            return "Please specify your cube preferences to get recommendations.";
+        // Tag filtering
+        for (String tag : normalizedTags) {
+            whereClauses.add("LOWER(Tags) LIKE ?");
+            params.add("%" + tag.toLowerCase().trim() + "%");
+        }
+        // Brand filtering
+        if (brand != null && !brand.trim().isEmpty()) {
+            whereClauses.add("LOWER(Brand) = ?");
+            params.add(brand.toLowerCase().trim());
+        }
+        // Price filtering
+        if (minPrice != null) {
+            whereClauses.add("Price >= ?");
+            params.add(minPrice);
+        }
+        if (maxPrice != null) {
+            whereClauses.add("Price <= ?");
+            params.add(maxPrice);
+        }
+
+        if (whereClauses.isEmpty()) {
+            return "Please specify at least one filter to get recommendations.";
+        }
 
         StringBuilder query = new StringBuilder("SELECT CubeName, Price, Brand, URL, Tags FROM Cubes WHERE ");
-        for (int i = 0; i < normalizedTags.size(); i++) {
-            query.append("LOWER(Tags) LIKE ?");
-            if (i < normalizedTags.size() - 1) query.append(" AND ");
-        }
+        query.append(String.join(" AND ", whereClauses));
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
              PreparedStatement stmt = conn.prepareStatement(query.toString())) {
 
             int paramIndex = 1;
-            for (String tag : normalizedTags) {
-                stmt.setString(paramIndex++, "%" + tag.toLowerCase().trim() + "%");
+            for (Object param : params) {
+                if (param instanceof String) stmt.setString(paramIndex++, (String) param);
+                else if (param instanceof Double) stmt.setDouble(paramIndex++, (Double) param);
             }
 
             ResultSet rs = stmt.executeQuery();
@@ -35,16 +56,14 @@ public class CubeDatabase {
                 for (String tag : normalizedTags) {
                     if (dbTags.contains(tag)) matchCount++;
                 }
-                if (matchCount == normalizedTags.size()) {
-                    matches.add(new CubeMatch(
-                            rs.getString("CubeName"),
-                            rs.getDouble("Price"),
-                            rs.getString("Brand"),
-                            rs.getString("URL"),
-                            rs.getString("Tags"),
-                            matchCount
-                    ));
-                }
+                matches.add(new CubeMatch(
+                        rs.getString("CubeName"),
+                        rs.getDouble("Price"),
+                        rs.getString("Brand"),
+                        rs.getString("URL"),
+                        rs.getString("Tags"),
+                        matchCount
+                ));
             }
 
             if (matches.isEmpty()) {
@@ -57,19 +76,19 @@ public class CubeDatabase {
                     try (PreparedStatement s = conn.prepareStatement(q)) {
                         s.setString(1, "%" + tag + "%");
                         ResultSet r = s.executeQuery();
-                        if (!r.next()) {
-                            missingFeatures.add(tag);
-                        } else {
-                            partialMatches.add(tag);
+                        boolean found = false;
+                        while (r.next()) {
+                            found = true;
                             exampleCubes.add(r.getString("CubeName") + " ($" + String.format("%.2f", r.getDouble("Price")) + ")");
                         }
+                        if (!found) missingFeatures.add(tag);
+                        else partialMatches.add(tag);
                     }
                 }
                 return AIExplainHandler.generateFriendlyExplanation(missingFeatures, partialMatches, exampleCubes);
             }
 
             matches.sort((a, b) -> Integer.compare(b.matchCount, a.matchCount));
-
             StringBuilder results = new StringBuilder();
             for (CubeMatch cube : matches) {
                 results.append(String.format(

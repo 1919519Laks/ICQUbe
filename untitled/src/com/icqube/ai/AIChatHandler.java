@@ -3,24 +3,22 @@ package com.icqube.ai;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
 
-import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AIChatHandler {
 
     private static final String MODEL = "gemini-2.5-flash";
 
-    /**
-     * Maps raw user natural language input to canonical database tags using Gemini.
-     * @param userInput The raw user input text.
-     * @return semicolon separated list of normalized tags.
-     */
     public static String mapUserTagsToCanonical(String userInput) {
         try {
             Client client = new Client();
+
             String prompt = "You are a tag normalizer for a Rubik's cube database. " +
-                    "Convert this user input tags or words: \"" + userInput + "\" " +
-                    "into canonical database tags chosen from: cheap;budget;fast;premium;magnetic;customizable;coremagnet;stickerless;bluetooth;uvcoated. " +
-                    "Output only the final tags separated by semicolons.";
+                    "Convert this user input tags or words: \"" + userInput + "\" to canonical tags: " +
+                    "cheap;budget;fast;premium;magnetic;customizable;coremagnet;stickerless;bluetooth;uvcoated. " +
+                    "Output only the final tags separated by semicolons. Read the userinput carefully and generate proper tags. Only generate tags from the user input, do not hallucinate tags. Do not output any cube names or recommendations.";
+
             GenerateContentResponse response = client.models.generateContent(MODEL, prompt, null);
             return response.text().toLowerCase().replaceAll("\\s+", "");
         } catch (Exception e) {
@@ -29,12 +27,21 @@ public class AIChatHandler {
         }
     }
 
-    /**
-     * Returns AI response given the full conversation context.
-     * Classifies last input as request or chat.
-     * @param fullConversation Entire conversation so far.
-     * @return Either tags separated by semicolon for search or text prefixed with [chat].
-     */
+    public static String[] extractFilterDetails(String userInput) {
+        String foundBrand = null;
+        Double minPrice = null, maxPrice = null;
+        Matcher brandMatcher = Pattern.compile("(brand|by)\\s+(\\w+)").matcher(userInput.toLowerCase());
+        if (brandMatcher.find()) foundBrand = brandMatcher.group(2);
+
+        Matcher priceMatcher = Pattern.compile("(under|below)\\s*\\$?(\\d+\\.?\\d*)").matcher(userInput.toLowerCase());
+        if (priceMatcher.find()) maxPrice = Double.parseDouble(priceMatcher.group(2));
+
+        Matcher minPriceMatcher = Pattern.compile("(over|above)\\s*\\$?(\\d+\\.?\\d*)").matcher(userInput.toLowerCase());
+        if (minPriceMatcher.find()) minPrice = Double.parseDouble(minPriceMatcher.group(2));
+
+        return new String[] { foundBrand, (minPrice == null ? "" : minPrice.toString()), (maxPrice == null ? "" : maxPrice.toString()) };
+    }
+
     public static String getResponseWithContext(String fullConversation) {
         try {
             Client client = new Client();
@@ -42,8 +49,7 @@ public class AIChatHandler {
             String classificationPrompt =
                     "You are an AI chatbot that answers either with cube recommendation tags or normal conversation. " +
                             "Given the conversation so far:\n" + fullConversation + "\n" +
-                            "Classify the user's last input as 'request' for product recommendation or 'chat' for conversation only. " +
-                            "Respond ONLY with 'request' or 'chat'.";
+                            "Classify the user's last input as 'request' or 'chat'. Only respond with 'request' or 'chat'.";
 
             GenerateContentResponse classification = client.models.generateContent(MODEL, classificationPrompt, null);
             String label = classification.text().trim().toLowerCase();
@@ -53,8 +59,8 @@ public class AIChatHandler {
                 return "[chat]" + chatResponse.text();
             } else {
                 String tagPrompt = "Based on the conversation:\n" + fullConversation +
-                        "\nExtract 3 to 6 appropriate tags for cube recommendation from: cheap;budget;fast;premium;magnetic;customizable;coremagnet;stickerless;bluetooth;uvcoated. " +
-                        "Output only tags separated by semicolons.";
+                        "\nExtract 1-6 tags for cube recommendation using: cheap;budget;fast;premium;magnetic;customizable;coremagnet;stickerless;bluetooth;uvcoated. " +
+                        "Output only the tags separated by semicolons. Do not output any cube names or recommendations. Only use tags from the user input.";
                 GenerateContentResponse tagResponse = client.models.generateContent(MODEL, tagPrompt, null);
                 return tagResponse.text().toLowerCase().replaceAll("\\s+", "");
             }

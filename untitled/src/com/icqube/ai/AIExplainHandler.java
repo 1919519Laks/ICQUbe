@@ -9,7 +9,7 @@ public class AIExplainHandler {
 
     private static final String MODEL = "gemini-2.5-flash";
 
-    public static String generateFriendlyExplanation(List<String> missingFeatures, List<String> partialMatches, List<String> possibleCubes) {
+    public static String generateFriendlyExplanation(List<String> missingFeatures, List<String> partialMatches, List<String> exampleCubes) {
         try {
             Client client = new Client();
 
@@ -24,11 +24,11 @@ public class AIExplainHandler {
                 promptBuilder.append("Some features partially match cubes: ");
                 promptBuilder.append(String.join(", ", partialMatches));
                 promptBuilder.append(". ");
-                promptBuilder.append("Example cubes with these features include: ");
-                promptBuilder.append(String.join("; ", possibleCubes));
+                promptBuilder.append("Example cubes with these features: ");
+                promptBuilder.append(String.join("; ", exampleCubes));
                 promptBuilder.append(". ");
             }
-            promptBuilder.append("Please write a polite, natural language explanation to the user, suggesting loosening criteria or alternatives if needed.");
+            promptBuilder.append("Please write a polite, concise message explaining the situation and suggesting loosening criteria. DO NOT invent or name cubes except the listed example cubes.");
 
             GenerateContentResponse response = client.models.generateContent(MODEL, promptBuilder.toString(), null);
             return response.text().trim();
