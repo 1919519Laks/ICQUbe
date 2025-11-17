@@ -9,10 +9,8 @@ public class LoginFrame extends JFrame {
     private final JPasswordField passwordField;
     private final JButton loginButton;
     private final JButton forgotButton;
-<<<<<<< HEAD
     private final JButton createAccountButton;
-=======
->>>>>>> f26cc991c54a4d88f671f550cc509a6ad3dd99ee
+
 
     private final AuthService authService;
 
@@ -21,11 +19,8 @@ public class LoginFrame extends JFrame {
         authService = new AuthService();
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-<<<<<<< HEAD
         setSize(350, 520);
-=======
         setSize(350, 500);
->>>>>>> f26cc991c54a4d88f671f550cc509a6ad3dd99ee
         setLocationRelativeTo(null);
 
         JPanel main = new JPanel(new GridBagLayout());
@@ -40,10 +35,7 @@ public class LoginFrame extends JFrame {
         passwordField = new JPasswordField(15);
         loginButton = new JButton("Login");
         forgotButton = new JButton("Forgot Password");
-<<<<<<< HEAD
         createAccountButton = new JButton("Create Account");
-=======
->>>>>>> f26cc991c54a4d88f671f550cc509a6ad3dd99ee
 
         int y = 0;
 
@@ -69,13 +61,10 @@ public class LoginFrame extends JFrame {
 
         gbc.gridx = 0; gbc.gridy = y; gbc.gridwidth = 2;
         main.add(forgotButton, gbc);
-<<<<<<< HEAD
         y++;
 
         gbc.gridx = 0; gbc.gridy = y; gbc.gridwidth = 2;
         main.add(createAccountButton, gbc);
-=======
->>>>>>> f26cc991c54a4d88f671f550cc509a6ad3dd99ee
 
         setContentPane(main);
 
@@ -85,10 +74,7 @@ public class LoginFrame extends JFrame {
     private void hookEvents() {
         loginButton.addActionListener(e -> doLogin());
         forgotButton.addActionListener(e -> doForgot());
-<<<<<<< HEAD
         createAccountButton.addActionListener(e -> openCreateAccount());
-=======
->>>>>>> f26cc991c54a4d88f671f550cc509a6ad3dd99ee
     }
 
     private void doLogin() {
@@ -120,16 +106,11 @@ public class LoginFrame extends JFrame {
         if (authService.verifyTwoFactor(username, entered.trim())) {
             JOptionPane.showMessageDialog(this, "Login successful!");
 
-<<<<<<< HEAD
             MainHomeFrame home = new MainHomeFrame(username);
             home.setVisible(true);
             this.dispose();
 
-=======
-            chatUI ui = new chatUI();
-            ui.setVisible(true);
-            this.dispose();
->>>>>>> f26cc991c54a4d88f671f550cc509a6ad3dd99ee
+
         } else {
             JOptionPane.showMessageDialog(this, "Incorrect 2FA code.");
         }
@@ -148,11 +129,8 @@ public class LoginFrame extends JFrame {
                 "Password reset process initiated (demo).\n" +
                         "Explain the full flow in the video/report.");
     }
-<<<<<<< HEAD
 
     private void openCreateAccount() {
         new CreateAccountFrame().setVisible(true);
     }
-=======
->>>>>>> f26cc991c54a4d88f671f550cc509a6ad3dd99ee
 }

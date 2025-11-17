@@ -1,4 +1,4 @@
-﻿package com.icqube.ai;
+package com.icqube.ai;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,6 +12,7 @@ public class SavedFavoritesFrame extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
+        // Get saved favorites from the manager
         List<String> favorites = SavedFavoritesManager.getFavorites();
 
         JTextArea area = new JTextArea();
@@ -20,12 +21,13 @@ public class SavedFavoritesFrame extends JFrame {
         area.setWrapStyleWord(true);
 
         if (favorites.isEmpty()) {
-            area.setText("You have no saved cubes yet.\nRun a search on the home page and click 'Save Current Result'.");
+            area.setText("You have no saved cubes yet.\n"
+                    + "Run a search on the home page and click 'Save Current Result'.");
         } else {
             StringBuilder sb = new StringBuilder();
             int i = 1;
             for (String fav : favorites) {
-                sb.append("⭐ Favorite ").append(i++).append(":\n");
+                sb.append("Favorite ").append(i++).append(":\n");
                 sb.append(fav).append("\n\n");
             }
             area.setText(sb.toString());
@@ -33,6 +35,7 @@ public class SavedFavoritesFrame extends JFrame {
 
         JScrollPane scrollPane = new JScrollPane(area);
 
-        add(scrollPane, BorderLayout.CENTER);
+        getContentPane().setLayout(new BorderLayout());
+        getContentPane().add(scrollPane, BorderLayout.CENTER);
     }
 }

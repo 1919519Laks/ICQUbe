@@ -9,11 +9,7 @@ import java.util.Random;
 
 public class AuthService {
 
-<<<<<<< HEAD
-    // Same DB as the rest of your project (ICQube.accdb in the project folder)
-=======
-    // Adjust path if needed, but this matches CubeDatabase
->>>>>>> f26cc991c54a4d88f671f550cc509a6ad3dd99ee
+
     private static final String DB_URL = "jdbc:ucanaccess://ICQube.accdb";
 
     private String currentTwoFactorCode;
@@ -23,10 +19,7 @@ public class AuthService {
         return DriverManager.getConnection(DB_URL);
     }
 
-<<<<<<< HEAD
-    // -------- LOGIN CHECK --------
-=======
->>>>>>> f26cc991c54a4d88f671f550cc509a6ad3dd99ee
+
     public boolean validateCredentials(String username, String password) {
         String sql = "SELECT COUNT(*) FROM Users WHERE username = ? AND password = ?";
         try (Connection conn = getConnection();
@@ -45,10 +38,6 @@ public class AuthService {
         return false;
     }
 
-<<<<<<< HEAD
-    // -------- 2FA --------
-=======
->>>>>>> f26cc991c54a4d88f671f550cc509a6ad3dd99ee
     public String startTwoFactor(String username) {
         Random random = new Random();
         int code = 100000 + random.nextInt(900000);
@@ -62,10 +51,7 @@ public class AuthService {
         return currentTwoFactorUser.equals(username) && currentTwoFactorCode.equals(codeEntered);
     }
 
-<<<<<<< HEAD
-    // -------- USER EXISTENCE CHECK --------
-=======
->>>>>>> f26cc991c54a4d88f671f550cc509a6ad3dd99ee
+
     public boolean userExists(String username) {
         String sql = "SELECT COUNT(*) FROM Users WHERE username = ?";
         try (Connection conn = getConnection();
@@ -81,7 +67,6 @@ public class AuthService {
         }
         return false;
     }
-<<<<<<< HEAD
 
     // -------- CREATE ACCOUNT --------
     public boolean createUser(String username, String password, String email, String phone) {
@@ -90,7 +75,7 @@ public class AuthService {
             return false;
         }
 
-        // Don’t allow duplicate usernames
+        // Donï¿½t allow duplicate usernames
         if (userExists(username)) {
             return false;
         }
@@ -111,6 +96,5 @@ public class AuthService {
         }
         return false;
     }
-=======
->>>>>>> f26cc991c54a4d88f671f550cc509a6ad3dd99ee
+
 }
