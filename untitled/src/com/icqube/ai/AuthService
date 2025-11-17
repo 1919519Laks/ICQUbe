@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 package com.icqube.ai;
 
 import java.sql.Connection;
@@ -114,3 +115,5 @@ public class AuthService {
 =======
 >>>>>>> f26cc991c54a4d88f671f550cc509a6ad3dd99ee
 }
+=======
+>>>>>>> parent of 6d08280 (pushing M's code fr)

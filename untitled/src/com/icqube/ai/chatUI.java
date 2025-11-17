@@ -280,7 +280,7 @@ public class chatUI extends javax.swing.JFrame {
             logger.log(java.util.logging.Level.SEVERE, null, ex);
         }
 
-        java.awt.EventQueue.invokeLater(() -> new LoginFrame().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> new chatUI().setVisible(true));
     }
 
     // Variables declaration - do not modify
